@@ -1,0 +1,25 @@
+name = "telegram-ai-bot"
+main = "src/index.js"
+compatibility_date = "2025-04-01"
+compatibility_flags = ["nodejs_compat"]
+
+# ===== KV Namespace (اجباری برای ذخیره تاریخچه) =====
+# ۱. ابتدا KV Namespace رو بسازید:
+#    npx wrangler kv:namespace create "KV_STORE"
+#
+# ۲. خروجی رو کپی کنید و id رو در زیر قرار بدید:
+#
+# [[kv_namespaces]]
+# binding = "KV_STORE"
+# id = "your-kv-id"
+
+# ===== متغیرهای محیطی (با wrangler secret put تنظیم کنید) =====
+# TELEGRAM_BOT_TOKEN  - توکن ربات تلگرام (اجباری)
+# ANTHROPIC_API_KEY   - کلید API (اجباری)
+# ANTHROPIC_BASE_URL  - آدرس API دلخواه (اختیاری)
+# BOT_USERNAME        - یوزرنیم ربات برای گروه (اختیاری)
+# ALLOWED_USERS       - کاربران مجاز (اختیاری)
+
+# ===== Cron Job (اختیاری) =====
+[triggers]
+crons = ["0 */6 * * *"]

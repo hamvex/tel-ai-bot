@@ -1,0 +1,12 @@
+{
+  "name": "telegram-ai-bot",
+  "version": "1.0.0",
+  "description": "ربات تلگرام هوش مصنوعی با پشتیبانی OpenAI/Anthropic + تحلیل عکس و فایل - Cloudflare Workers",
+  "main": "worker-bundle.js",
+  "scripts": {
+    "setup": "wrangler kv:namespace create KV_STORE"
+  },
+  "keywords": ["telegram", "bot", "ai", "cloudflare", "openai", "anthropic"],
+  "author": "",
+  "license": "MIT"
+}
