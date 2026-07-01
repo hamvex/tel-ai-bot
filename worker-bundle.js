@@ -144,10 +144,13 @@ async function antStr(b,k,s,m,model,oc,mx){const r=await fetch(b+'/v1/messages',
 
 // =================== MEDIA HELPERS ===================
 const VIDEXT=['mp4','mov','avi','mkv','webm','flv','wmv','m4v','3gp','mpeg','mpg','ogv']
-function isVidDoc(m){return!!(m.document&&(((m.document.mime_type||'').indexOf('video/')===0)||VIDEXT.indexOf(((m.document.file_name||'').split('.').pop()||'').toLowerCase())>=0))}
+function docExt(m){return((m.document&&m.document.file_name||'').split('.').pop()||'').toLowerCase()}
+function isVidDoc(m){return!!(m.document&&(((m.document.mime_type||'').indexOf('video/')===0)||VIDEXT.indexOf(docExt(m))>=0))}
+function isGifDoc(m){return!!(m.document&&(((m.document.mime_type||'').toLowerCase()==='image/gif')||docExt(m)==='gif'))}
 function isVideoMsg(m){return!!(m.video||m.video_note||m.animation)||isVidDoc(m)}
-// ویدئو پشتیبانی نمی‌شود؛ به عنوان مدیای قابل‌پردازش حساب نمی‌شود تا در گروه‌ها اسپم نکند
-function hasMedia(m){if(isVideoMsg(m))return false;return!!(m.photo||(m.document&&m.document.file_id))}
+// ویدئو و GIF پشتیبانی نمی‌شوند؛ به عنوان مدیای قابل‌پردازش حساب نمی‌شوند تا در گروه‌ها اسپم نکنند
+function isUnsupportedMedia(m){return isVideoMsg(m)||isGifDoc(m)}
+function hasMedia(m){if(isUnsupportedMedia(m))return false;return!!(m.photo||(m.document&&m.document.file_id))}
 function bestPhoto(p){var b=p[0];for(var i=1;i<p.length;i++)if(p[i].file_size>(b.file_size||0))b=p[i];return b}
 
 // =================== COMMANDS ===================
@@ -179,8 +182,8 @@ async function sL(i,t){if(t.length<=4096)return tgS(i,t);let r=t
 
 function escRx(s){return String(s).replace(/[.*+?^${}()|[\]\\]/g,'\\$&')}
 async function hM(u,b,tw){const m=u.message;if(!m)return 0;const i=m.chat.id
-  // ویدئو پشتیبانی نمی‌شود — چه ویدئوی تلگرام، چه فایل ویدئویی؛ صریحاً رد می‌کنیم و به مدل پاس نمی‌دهیم
-  if(isVideoMsg(m)){await tgS(i,'🎬 *تحلیل ویدئو پشتیبانی نمی‌شود.*\n\nبه‌جای آن می‌توانید بفرستید:\n• 📸 اسکرین‌شات از صحنه‌های اصلی\n• 📝 متن یا دیالوگ ویدئو\n• ✍️ خلاصه‌ای از اتفاقات ویدئو\n\nتا دقیق برایتان تحلیل کنم.');return 1}
+  // ویدئو و GIF پشتیبانی نمی‌شوند — چه ویدئو/گیف تلگرام، چه فایل؛ صریحاً رد می‌کنیم و به مدل پاس نمی‌دهیم
+  if(isUnsupportedMedia(m)){await tgS(i,'🎬 *تحلیل ویدئو و GIF پشتیبانی نمی‌شود.*\n\nبه‌جای آن می‌توانید بفرستید:\n• 📸 اسکرین‌شات از صحنه‌های اصلی\n• 📝 متن یا دیالوگ\n• ✍️ خلاصه‌ای از اتفاقات\n\nتا دقیق برایتان تحلیل کنم.');return 1}
   var isPhoto=!!(m.photo&&m.photo.length>0),isDoc=!!m.document
   var twRx=tw?new RegExp('\\s*'+escRx(tw)+'\\s*','g'):null
   function clean(s){s=s.replace(new RegExp('@'+b+'\\b','gi'),'');if(twRx)s=s.replace(twRx,' ');return s.trim()}
