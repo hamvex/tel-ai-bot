@@ -7,11 +7,12 @@ compatibility_flags = ["nodejs_compat"]
 # ۱. ابتدا KV Namespace رو بسازید:
 #    npx wrangler kv:namespace create "KV_STORE"
 #
-# ۲. خروجی رو کپی کنید و id رو در زیر قرار بدید:
-#
-# [[kv_namespaces]]
-# binding = "KV_STORE"
-# id = "your-kv-id"
+# ۲. خروجی رو کپی کنید و id رو در زیر قرار بدید (REPLACE_WITH_YOUR_KV_ID):
+#    (اگر از داشبورد استفاده می‌کنید: Worker → Settings → Bindings → KV → نام binding را KV_STORE بگذارید)
+
+[[kv_namespaces]]
+binding = "KV_STORE"
+id = "REPLACE_WITH_YOUR_KV_ID"
 
 # ===== متغیرهای محیطی (با wrangler secret put تنظیم کنید) =====
 # TELEGRAM_BOT_TOKEN  - توکن ربات تلگرام (اجباری)
