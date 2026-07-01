@@ -33,7 +33,13 @@ function isC(t){return t&&t.startsWith('/')}
 
 // =================== FILE DOWNLOAD ===================
 async function tgFile(fid){var r=await(await fetch(await tgA()+'/getFile?file_id='+fid)).json();return r.ok?r.result:null}
-async function tgDL(fp){var r=await fetch('https://api.telegram.org/file/bot'+await tgT()+'/'+fp);var b=await r.arrayBuffer();var e=(fp.split('.').pop()||'bin').toLowerCase();var mt={'jpg':'image/jpeg','jpeg':'image/jpeg','png':'image/png','gif':'image/gif','webp':'image/webp','pdf':'application/pdf','txt':'text/plain','mp4':'video/mp4','mov':'video/quicktime','avi':'video/x-msvideo','mkv':'video/x-matroska'}[e]||'application/octet-stream';var s='';new Uint8Array(b).forEach(function(c){s+=String.fromCharCode(c)});return{b64:btoa(s),mime:mt,ext:e,name:fp.split('/').pop()||'file',size:b.byteLength}}
+async function tgDL(fp){var r=await fetch('https://api.telegram.org/file/bot'+await tgT()+'/'+fp);var b=await r.arrayBuffer();var e=(fp.split('.').pop()||'bin').toLowerCase();var mt={'jpg':'image/jpeg','jpeg':'image/jpeg','png':'image/png','gif':'image/gif','webp':'image/webp','pdf':'application/pdf','txt':'text/plain'}[e]||'application/octet-stream';var s='';new Uint8Array(b).forEach(function(c){s+=String.fromCharCode(c)});return{b64:btoa(s),mime:mt,ext:e,name:fp.split('/').pop()||'file',size:b.byteLength}}
+// ---- کمک‌کننده‌های فایل: رمزگشایی درست UTF-8 + تشخیص فایل متنی/کد ----
+const MAXFILECHARS=50000
+const TEXTEXT=['txt','md','markdown','csv','tsv','json','jsonl','ndjson','xml','yaml','yml','html','htm','css','scss','less','js','mjs','cjs','ts','tsx','jsx','py','java','c','cc','cpp','h','hpp','cs','go','rs','rb','php','sql','sh','bash','zsh','bat','ps1','ini','conf','cfg','toml','log','env','tex','r','kt','kts','swift','dart','vue','svelte','pl','lua','scala','gradle','properties','srt','vtt','gitignore','dockerfile','makefile','asm','m','vb','fs','clj','ex','exs','erl','hs','jl','nim','zig','proto','graphql','gql','rst','org','tsv']
+function b64ToBytes(b64){var bin=atob(b64);var u=new Uint8Array(bin.length);for(var i=0;i<bin.length;i++)u[i]=bin.charCodeAt(i);return u}
+function b64ToText(b64){try{return new TextDecoder('utf-8',{fatal:false}).decode(b64ToBytes(b64))}catch(e){return''}}
+function isTextFile(md){if(!md)return false;if(md.mime&&(md.mime.indexOf('text/')===0||md.mime==='application/json'||md.mime==='application/xml'||md.mime==='application/javascript'))return true;var n=(md.name||'').toLowerCase();if(TEXTEXT.indexOf(md.ext)>=0)return true;if(n==='dockerfile'||n==='makefile'||n==='.gitignore'||n==='.env')return true;return false}
 
 // =================== STORE ===================
 const MAX=1000,TTL=86400,KVMAX=20*1024*1024;const mm={}
@@ -43,7 +49,7 @@ async function kp(k,v,t,i){const x=kv(),o=t?{expirationTtl:t}:{},j=JSON.stringif
 async function kd(k){const x=kv();if(x)await x.delete(k);else delete(mm.h||(mm.h={}))[k]}
 async function gh(i){return(await kg('c:'+i+':h'))||[]}
 async function sh(i,m){var arr=m.slice(-MAX)
-  // مدیا (عکس/ویدئو) به صورت base64 داخل تاریخچه ذخیره می‌شود و می‌تواند بزرگ باشد.
+  // مدیا (عکس/فایل) به صورت base64 داخل تاریخچه ذخیره می‌شود و می‌تواند بزرگ باشد.
   // Cloudflare KV سقف ~۲۵MB برای هر مقدار دارد؛ قدیمی‌ترین پیام‌ها را حذف کن تا زیر بودجه بماند.
   while(arr.length>1&&JSON.stringify(arr).length>KVMAX)arr=arr.slice(1)
   try{await kp('c:'+i+':h',arr,TTL)}
@@ -92,11 +98,17 @@ async function apim(){var t=await at(),b=await base(),k=await akey(),ms
   if(!ms&&t==='openai'){var r4=await fetch(b+'/v1/models',{headers:{'x-api-key':k,'anthropic-version':'2023-06-01'}});if(r4.ok){var d4=await r4.json();if(d4.data)ms=d4.data}}
   if(!ms)throw new Error('دریافت لیست مدل‌ها ممکن نشد')
   return ms.filter(function(m){return m.id})}
-// تبدیل محتوای پیام بین دو فرمت (بلوک عکس OpenAI ↔ Anthropic)
+// تبدیل محتوای پیام بین دو فرمت (بلوک عکس و فایل PDF: OpenAI ↔ Anthropic)
 function convContent(c,to){if(typeof c==='string'||!Array.isArray(c))return c
   return c.map(function(p){if(!p||typeof p!=='object')return p
-    if(to==='anthropic'){if(p.type==='image_url'&&p.image_url&&p.image_url.url){var mm=/^data:([^;]+);base64,(.*)$/.exec(p.image_url.url);if(mm)return{type:'image',source:{type:'base64',media_type:mm[1],data:mm[2]}}}return p}
+    if(to==='anthropic'){
+      if(p.type==='image_url'&&p.image_url&&p.image_url.url){var mm=/^data:([^;]+);base64,(.*)$/.exec(p.image_url.url);if(mm)return{type:'image',source:{type:'base64',media_type:mm[1],data:mm[2]}}}
+      if(p.type==='file'&&p.file&&p.file.file_data){var fm=/^data:([^;]+);base64,(.*)$/.exec(p.file.file_data);if(fm)return{type:'document',source:{type:'base64',media_type:fm[1],data:fm[2]}}}
+      if(p.type==='document')return{type:'document',source:p.source}
+      return p}
+    // to==='openai'
     if(p.type==='image'&&p.source&&p.source.type==='base64')return{type:'image_url',image_url:{url:'data:'+p.source.media_type+';base64,'+p.source.data,detail:'high'}}
+    if(p.type==='document'&&p.source&&p.source.type==='base64')return{type:'file',file:{filename:p._name||'file.pdf',file_data:'data:'+p.source.media_type+';base64,'+p.source.data}}
     return p})}
 // آرایهٔ پیام را به شکل درستِ هر فرمت می‌سازد؛ Anthropic نباید role:system داشته باشد، OpenAI باید system جدا در ابتدا داشته باشد
 function toAnthMsgs(m){return m.filter(function(x){return x.role!=='system'}).map(function(x){return{role:x.role,content:convContent(x.content,'anthropic')}})}
@@ -131,13 +143,13 @@ async function antStr(b,k,s,m,model,oc,mx){const r=await fetch(b+'/v1/messages',
   return full}
 
 // =================== MEDIA HELPERS ===================
-function hasMedia(m){return!!(m.photo||m.video||(m.document&&m.document.file_id))}
+function hasMedia(m){return!!(m.photo||(m.document&&m.document.file_id))}
 function bestPhoto(p){var b=p[0];for(var i=1;i<p.length;i++)if(p[i].file_size>(b.file_size||0))b=p[i];return b}
 
 // =================== COMMANDS ===================
 async function d(){return(await at())==='openai'?'OpenAI':'Anthropic'}
-async function cSt(i){const n=await d();await tgS(i,'🤖 *به ربات هوش مصنوعی خوش آمدید!*\n\n🧩 *API:* '+n+'\n📡 *سرور:* `'+(await base())+'`\n\n🚀 *قابلیت‌ها:*\n• چت با مدل‌های مختلف\n• System Prompt دلخواه\n• تاریخچه هوشمند (۱۰۰۰ پیام)\n• تحلیل عکس، ویدئو و فایل 📸\n• قابل استفاده در گروه‌ها\n\n📋 *دستورات:*\n/start - شروع\n/help - راهنما\n/models - لیست مدل‌ها\n/model name - تغییر مدل\n/system text - تنظیم System Prompt\n/mode - حالت پاسخ (⚡ سریع / 🧠 عمیق)\n/reset - پاک کردن تاریخچه\n/stats - وضعیت\n\n💡 عکس، ویدئو یا فایل بفرستید تحلیل کنم!')}
-async function cH(i){await tgS(i,'📖 *راهنمای کامل*\n\n*دستورات:*\n/start - شروع مجدد\n/help - این راهنما\n/models - لیست مدل‌ها\n/model \\`name\\` - انتخاب مدل\n/system \\`text\\` - تنظیم System Prompt\n/mode \\`instant|think\\` - حالت پاسخ (⚡ سریع / 🧠 تفکر عمیق)\n/reset - پاک کردن تاریخچه\n/stats - آمار\n\n*تحلیل عکس:* 🖼️ عکس بفرستید\n*تحلیل ویدئو:* 📹 ویدئو بفرستید\n*تحلیل فایل:* 📄 PDF یا txt بفرستید\n*گروه:* منشن کنید یا "حاجی" بگید\n*نکته:* حداکثر ۱۰۰۰ پیام در تاریخچه')}
+async function cSt(i){const n=await d();await tgS(i,'🤖 *به ربات هوش مصنوعی خوش آمدید!*\n\n🧩 *API:* '+n+'\n📡 *سرور:* `'+(await base())+'`\n\n🚀 *قابلیت‌ها:*\n• چت با مدل‌های مختلف\n• System Prompt دلخواه\n• تاریخچه هوشمند (۱۰۰۰ پیام)\n• تحلیل عکس و فایل (PDF، متن، کد) 📸📄\n• قابل استفاده در گروه‌ها\n\n📋 *دستورات:*\n/start - شروع\n/help - راهنما\n/models - لیست مدل‌ها\n/model name - تغییر مدل\n/system text - تنظیم System Prompt\n/mode - حالت پاسخ (⚡ سریع / 🧠 عمیق)\n/reset - پاک کردن تاریخچه\n/stats - وضعیت\n\n💡 عکس یا فایل بفرستید تحلیل کنم!')}
+async function cH(i){await tgS(i,'📖 *راهنمای کامل*\n\n*دستورات:*\n/start - شروع مجدد\n/help - این راهنما\n/models - لیست مدل‌ها\n/model \\`name\\` - انتخاب مدل\n/system \\`text\\` - تنظیم System Prompt\n/mode \\`instant|think\\` - حالت پاسخ (⚡ سریع / 🧠 تفکر عمیق)\n/reset - پاک کردن تاریخچه\n/stats - آمار\n\n*تحلیل عکس:* 🖼️ عکس بفرستید\n*تحلیل فایل:* 📄 PDF، متن یا کد بفرستید (txt, md, csv, json, py, js و ...)\n*گروه:* منشن کنید یا "حاجی" بگید\n*نکته:* حداکثر ۱۰۰۰ پیام در تاریخچه')}
 async function cM(i){await tgAc(i)
   try{const m=await apim();if(!m.length)return tgS(i,'❌ مدلی یافت نشد.');const me=await gm(i),cr=me.model||'پیش‌فرض'
     let t='🧠 *مدل‌های موجود ('+m.length+' عدد)*\n✅ *فعلی:* `'+cr+'`\n\nبرای تغییر: /model \\`name\\`\n\n'
@@ -163,37 +175,38 @@ async function sL(i,t){if(t.length<=4096)return tgS(i,t);let r=t
 
 function escRx(s){return String(s).replace(/[.*+?^${}()|[\]\\]/g,'\\$&')}
 async function hM(u,b,tw){const m=u.message;if(!m)return 0;const i=m.chat.id
-  var isPhoto=!!(m.photo&&m.photo.length>0),isDoc=!!m.document,isVideo=!!m.video
+  var isPhoto=!!(m.photo&&m.photo.length>0),isDoc=!!m.document
   var twRx=tw?new RegExp('\\s*'+escRx(tw)+'\\s*','g'):null
   function clean(s){s=s.replace(new RegExp('@'+b+'\\b','gi'),'');if(twRx)s=s.replace(twRx,' ');return s.trim()}
   var caption=clean(m.caption||'')
-  if(!isPhoto&&!isDoc&&!isVideo&&!m.text)return 0
+  if(!isPhoto&&!isDoc&&!m.text)return 0
   var txt=''
-  if(!isPhoto&&!isDoc&&!isVideo&&m.text){txt=clean(m.text);if(!txt)return 0}
-  if((isPhoto||isDoc||isVideo)&&!caption)txt='این فایل رو تحلیل کن و توضیح بده'
+  if(!isPhoto&&!isDoc&&m.text){txt=clean(m.text);if(!txt)return 0}
+  if((isPhoto||isDoc)&&!caption)txt='این فایل رو تحلیل کن و توضیح بده'
   if(caption)txt=caption
   await tgAc(i)
   var md=null
   try{if(isPhoto){var bp=bestPhoto(m.photo);var fi=await tgFile(bp.file_id);if(fi)md=await tgDL(fi.file_path)}
-    if(isDoc){var fi2=await tgFile(m.document.file_id);if(fi2){md=await tgDL(fi2.file_path);if(m.document.file_name)md.name=m.document.file_name}}
-    if(isVideo){var fi3=await tgFile(m.video.file_id);if(fi3){md=await tgDL(fi3.file_path);if(m.video.file_name)md.name=m.video.file_name;md.duration=m.video.duration||0;md.width=m.video.width||0;md.height=m.video.height||0}
-      // اگر ویدئو thumbnail داره، به عنوان عکس استفاده کن
-      if(md&&m.video.thumb){try{var th=await tgFile(m.video.thumb.file_id);if(th){var td=await tgDL(th.file_path);md.thumbB64=td.b64;md.thumbMime=td.mime}}catch{}}
-    }
+    if(isDoc){var fi2=await tgFile(m.document.file_id);if(fi2){md=await tgDL(fi2.file_path);if(m.document.file_name){md.name=m.document.file_name;md.ext=(md.name.split('.').pop()||md.ext).toLowerCase()}if(m.document.mime_type)md.mime=m.document.mime_type}}
   }catch(e){console.error('DL error:',e.message)}
   var isOA=await at()==='openai',uc
   if(md&&md.mime.startsWith('image/')){
     uc=isOA?[{type:'text',text:txt},{type:'image_url',image_url:{url:'data:'+md.mime+';base64,'+md.b64,detail:'high'}}]:[{type:'text',text:txt},{type:'image',source:{type:'base64',media_type:md.mime,data:md.b64}}]
     await ah(i,'user',uc)
   }else if(isPhoto&&!md){await ah(i,'user',txt+' [عکس دریافت شد اما امکان دانلود وجود نداشت]')
-  }else if(isDoc&&md&&md.ext==='txt'){var tc='';try{var u8=new Uint8Array(atob(md.b64).split('').map(function(c){return c.charCodeAt(0)}));for(var k=0;k<u8.length;k++)tc+=String.fromCharCode(u8[k]);tc=tc.substring(0,5000)}catch(e){tc='[خطا در خواندن فایل]'}
-    uc=[{type:'text',text:txt+'\n--- '+md.name+' ---\n'+tc+'\n--- پایان ---'}];await ah(i,'user',uc)
-  }else if(isDoc&&md){uc=[{type:'text',text:txt+'\n[فایل: '+md.name+' ('+md.mime+')]'}];await ah(i,'user',uc)
-  }else if(isVideo&&md){var vidInfo='📹 ویدئو: '+md.name+' ('+Math.round(md.duration/60)+'دقیقه, '+md.width+'x'+md.height+')'
-    if(md.thumbB64&&isOA){uc=[{type:'text',text:txt+'\n'+vidInfo},{type:'image_url',image_url:{url:'data:'+md.thumbMime+';base64,'+md.thumbB64,detail:'low'}}];await ah(i,'user',uc)}
-    else if(md.thumbB64){uc=[{type:'text',text:txt+'\n'+vidInfo},{type:'image',source:{type:'base64',media_type:md.thumbMime,data:md.thumbB64}}];await ah(i,'user',uc)}
-    else{await ah(i,'user',txt+'\n'+vidInfo)}
-  }else if(isVideo&&!md){await ah(i,'user',txt+' [📹 ویدئو دریافت شد]')
+  }else if(isDoc&&md&&isTextFile(md)){
+    // فایل متنی/کد: محتوا را با رمزگشایی درست UTF-8 می‌خوانیم و به مدل می‌دهیم
+    var tc=b64ToText(md.b64);if(!tc)tc='[محتوای فایل قابل خواندن نبود]'
+    var trimmed=tc.length>MAXFILECHARS?tc.substring(0,MAXFILECHARS)+'\n\n[... فایل طولانی بود و بریده شد ...]':tc
+    uc=[{type:'text',text:txt+'\n\n📄 محتوای فایل «'+md.name+'»:\n```\n'+trimmed+'\n```'}];await ah(i,'user',uc)
+  }else if(isDoc&&md&&(md.ext==='pdf'||md.mime==='application/pdf')){
+    // PDF: به‌صورت بومی به مدل داده می‌شود (بلوک document انتروپیک؛ در fallback به فرمت OpenAI تبدیل می‌شود)
+    uc=isOA
+      ?[{type:'text',text:txt},{type:'file',file:{filename:md.name||'file.pdf',file_data:'data:application/pdf;base64,'+md.b64}}]
+      :[{type:'text',text:txt},{type:'document',source:{type:'base64',media_type:'application/pdf',data:md.b64},_name:md.name||'file.pdf'}]
+    await ah(i,'user',uc)
+  }else if(isDoc&&md){uc=[{type:'text',text:txt+'\n[فایل «'+md.name+'» ('+md.mime+') دریافت شد؛ این نوع فایل قابل تحلیل مستقیم نیست.]'}];await ah(i,'user',uc)
+  }else if(isDoc&&!md){await ah(i,'user',txt+' [فایل دریافت شد اما امکان دانلود وجود نداشت]')
   }else{await ah(i,'user',txt)}
   var meta=await gm(i),history=await gh(i),sp=meta.systemPrompt||'شما یک دستیار هوشمند و مفید هستید. به زبان فارسی پاسخ دهید.',model=meta.model||(isOA?'gemini-3-pro':'claude-sonnet-4-6-20250528')
   var mode=await getMode(i),mm2=modeCfg(mode),fsp=sp+mm2.sp,mx=mm2.mx,ph=mm2.ph
