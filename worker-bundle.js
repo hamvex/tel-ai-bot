@@ -298,7 +298,6 @@ function sH(w,s,c){if(!c)c={};return'<!DOCTYPE html>'+
 '<div class="row"><button class="btn" onclick="sv()">💾 ذخیره تنظیمات</button><button class="btn btn2" onclick="ts()">🧪 تست اتصال</button></div>'+
 '<div id="r"></div></div>'+
 '<div class="card"><h3>🔗 Webhook</h3><div class="box">'+w+'</div>'+
-'<p class="sub" style="margin:8px 0 12px">با «💾 ذخیره تنظیمات»، وب‌هوک ربات قبلی خودکار حذف و ربات جدید فعال می‌شود — فقط رباتی که توکنش را وارد کرده‌اید کار می‌کند. دکمهٔ زیر برای ست دستی/دوبارهٔ وب‌هوک است.</p>'+
 '<div class="row"><button class="btn" onclick="sw()">🔄 تنظیم Webhook</button><button class="btn btn2" onclick="wi()">🔍 بررسی وضعیت Webhook</button></div></div>'+
 '<script>'+
 'async function sv(){var g=document.getElementById("tgToken"),b=document.getElementById("apiKey"),u=document.getElementById("baseUrl"),n=document.getElementById("botUsername"),tw=document.getElementById("triggerWord"),ap=document.getElementById("apiType"),dm=document.getElementById("defaultMode"),r=document.getElementById("r");'+
