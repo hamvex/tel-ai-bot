@@ -301,7 +301,7 @@ function sH(w,s,c){if(!c)c={};return'<!DOCTYPE html>'+
 '<div id="r"></div></div>'+
 '<div class="card"><h3>🔗 Webhook</h3><div class="box">'+w+'</div>'+
 '<p class="sub" style="margin:8px 0 12px">هر ربات مستقل است. برای هر توکن جدید: توکن را وارد و «ذخیره» کنید، سپس همین‌جا «تنظیم Webhook» را بزنید. پاسخ‌ها همیشه از همان ربات ارسال می‌شوند.</p>'+
-'<button class="btn" onclick="sw()">🔄 تنظیم Webhook</button></div>'+
+'<div class="row"><button class="btn" onclick="sw()">🔄 تنظیم Webhook</button><button class="btn btn2" onclick="wi()">🔍 بررسی وضعیت Webhook</button></div></div>'+
 '<script>'+
 'async function sv(){var g=document.getElementById("tgToken"),b=document.getElementById("apiKey"),u=document.getElementById("baseUrl"),n=document.getElementById("botUsername"),tw=document.getElementById("triggerWord"),ap=document.getElementById("apiType"),dm=document.getElementById("defaultMode"),r=document.getElementById("r");'+
 'r.style.display="none";'+
@@ -314,10 +314,18 @@ function sH(w,s,c){if(!c)c={};return'<!DOCTYPE html>'+
 'async function sw(){var b=document.querySelector(".card:last-child .btn"),r=document.getElementById("r");'+
 'b.disabled=1;b.textContent="⏳...";r.style.display="none";'+
 'try{var d=await(await fetch("/sw")).json();r.style.display="block";'+
-'if(d.ok){r.className="sc";r.textContent="✅ Webhook تنظیم شد! ربات آماده است."}'+
+'if(d.ok){r.className="sc";r.textContent="✅ Webhook تنظیم شد! ربات آماده است.\\n"+(d.webhookUrl||"")}'+
 'else{r.className="er";r.textContent="❌ "+(d.description||JSON.stringify(d))}}'+
 'catch(e){r.style.display="block";r.className="er";r.textContent="❌ "+e.message}'+
 'b.disabled=0;b.textContent="🔄 تنظیم Webhook"}'+
+'async function wi(){var r=document.getElementById("r");r.style.display="block";r.className="";r.textContent="⏳ در حال بررسی...";'+
+'try{var d=await(await fetch("/whinfo")).json();'+
+'if(d.error){r.className="er";r.textContent="❌ "+d.error;return}'+
+'var ok=d.tokenValid&&d.matches&&!d.lastError;r.className=ok?"sc":"er";'+
+'r.textContent=(d.tokenValid?"✅ توکن معتبر: "+d.bot:"❌ "+d.bot)+"\\n"+'+
+'(d.matches?"✅ Webhook درست ست شده":"⚠️ Webhook فعلی: "+(d.currentUrl||"ست نشده")+"\\nباید باشد: "+d.expected+"\\n→ دکمهٔ «تنظیم Webhook» را بزنید")+"\\n"+'+
+'"📥 در صف: "+(d.pending!=null?d.pending:"?")+(d.lastError?"\\n❌ خطای اخیر تلگرام: "+d.lastError:"")}'+
+'catch(e){r.className="er";r.textContent="❌ "+e.message}}'+
 '</script></body></html>'}
 
 // =================== EXPORT DEFAULT ===================
@@ -381,7 +389,17 @@ export default{
         var w2=url.origin+'/w/'+encodeURIComponent(tok)
         await fetch('https://api.telegram.org/bot'+tok+'/deleteWebhook')
         var r=await fetch('https://api.telegram.org/bot'+tok+'/setWebhook',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({url:w2,allowed_updates:['message','callback_query'],drop_pending_updates:true})})
-        return new Response(JSON.stringify(await r.json()),{headers:{'Content-Type':'application/json'}})
+        var jr=await r.json();jr.webhookUrl=w2
+        return new Response(JSON.stringify(jr),{headers:{'Content-Type':'application/json'}})
+      }
+      // تشخیص وضعیت: getMe (توکن معتبر؟) + getWebhookInfo (وب‌هوک کجا ست شده و خطای تحویل)
+      if(url.pathname==='/whinfo'){
+        var tk2=await tgT()
+        if(!tk2) return new Response(JSON.stringify({ok:false,error:'توکن تلگرام تنظیم نشده'}),{headers:{'Content-Type':'application/json'}})
+        var out={expected:url.origin+'/w/'+encodeURIComponent(tk2)}
+        try{var me=await(await fetch('https://api.telegram.org/bot'+tk2+'/getMe')).json();out.bot=me.ok?('@'+(me.result.username||'')):('توکن نامعتبر: '+(me.description||''));out.tokenValid=!!me.ok}catch(e){out.bot='خطا در اتصال';out.tokenValid=false}
+        try{var wi=await(await fetch('https://api.telegram.org/bot'+tk2+'/getWebhookInfo')).json();if(wi.ok){out.currentUrl=wi.result.url||'(ست نشده)';out.pending=wi.result.pending_update_count;out.lastError=wi.result.last_error_message||'';out.matches=wi.result.url===out.expected}}catch(e){out.currentUrl='خطا'}
+        return new Response(JSON.stringify(out),{headers:{'Content-Type':'application/json'}})
       }
       return new Response('Not Found',{status:404})
     }
