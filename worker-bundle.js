@@ -13,7 +13,10 @@
 // ۵. برید تو تلگرام پیام بدید
 
 // =================== TELEGRAM ===================
-async function tgT(){var c=await getCfg();if(c.telegramToken)return c.telegramToken;return typeof TELEGRAM_BOT_TOKEN!=='undefined'?TELEGRAM_BOT_TOKEN:''}
+// توکنِ رباتِ دریافت‌کنندهٔ آپدیت (از مسیر webhook خوانده می‌شود). برای پاسخ همیشه همین توکن استفاده می‌شود
+// تا جواب به همان رباتی برگردد که پیام را گرفته — نه آخرین توکن ذخیره‌شده. این پایهٔ پشتیبانی از چند ربات مستقل است.
+let _rtok=''
+async function tgT(){if(_rtok)return _rtok;var c=await getCfg();if(c.telegramToken)return c.telegramToken;return typeof TELEGRAM_BOT_TOKEN!=='undefined'?TELEGRAM_BOT_TOKEN:''}
 async function tgA(){return'https://api.telegram.org/bot'+(await tgT())}
 async function tgS(id,t,op){var bd={chat_id:id,text:t,parse_mode:'Markdown',disable_web_page_preview:true,...op}
   var j=await(await fetch(await tgA()+'/sendMessage',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(bd)})).json()
@@ -297,6 +300,7 @@ function sH(w,s,c){if(!c)c={};return'<!DOCTYPE html>'+
 '<div class="row"><button class="btn" onclick="sv()">💾 ذخیره تنظیمات</button><button class="btn btn2" onclick="ts()">🧪 تست اتصال</button></div>'+
 '<div id="r"></div></div>'+
 '<div class="card"><h3>🔗 Webhook</h3><div class="box">'+w+'</div>'+
+'<p class="sub" style="margin:8px 0 12px">هر ربات مستقل است. برای هر توکن جدید: توکن را وارد و «ذخیره» کنید، سپس همین‌جا «تنظیم Webhook» را بزنید. پاسخ‌ها همیشه از همان ربات ارسال می‌شوند.</p>'+
 '<button class="btn" onclick="sw()">🔄 تنظیم Webhook</button></div>'+
 '<script>'+
 'async function sv(){var g=document.getElementById("tgToken"),b=document.getElementById("apiKey"),u=document.getElementById("baseUrl"),n=document.getElementById("botUsername"),tw=document.getElementById("triggerWord"),ap=document.getElementById("apiType"),dm=document.getElementById("defaultMode"),r=document.getElementById("r");'+
@@ -328,7 +332,7 @@ export default{
     globalThis.KV_STORE=env.KV_STORE
     globalThis.ANTHROPIC_API_KEY=env.API_KEY||env.ANTHROPIC_API_KEY||''
     globalThis.ANTHROPIC_BASE_URL=env.BASE_URL||env.ANTHROPIC_BASE_URL||''
-    _cfgCache=null;_atCache=null
+    _cfgCache=null;_atCache=null;_rtok=''
 
     const url=new URL(req.url)
 
@@ -374,7 +378,7 @@ export default{
       if(url.pathname==='/sw'){
         var tok=await tgT()
         if(!tok) return new Response(JSON.stringify({ok:0,description:'TELEGRAM_BOT_TOKEN تنظیم نشده'}),{headers:{'Content-Type':'application/json'}})
-        var w2=url.origin+'/'
+        var w2=url.origin+'/w/'+encodeURIComponent(tok)
         await fetch('https://api.telegram.org/bot'+tok+'/deleteWebhook')
         var r=await fetch('https://api.telegram.org/bot'+tok+'/setWebhook',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({url:w2,allowed_updates:['message','callback_query'],drop_pending_updates:true})})
         return new Response(JSON.stringify(await r.json()),{headers:{'Content-Type':'application/json'}})
@@ -383,6 +387,10 @@ export default{
     }
 
     // ===== POST: Webhook از تلگرام =====
+    // توکنِ رباتِ دریافت‌کننده از مسیر /w/<token> خوانده می‌شود تا پاسخ با همان ربات ارسال شود (چند ربات مستقل).
+    // مسیر قدیمی «/» برای سازگاری به توکنِ config/env برمی‌گردد (تک‌رباتی).
+    var pathTok=url.pathname.indexOf('/w/')===0?decodeURIComponent(url.pathname.slice(3)):''
+    _rtok=pathTok||(await getCfg()).telegramToken||(typeof TELEGRAM_BOT_TOKEN!=='undefined'?TELEGRAM_BOT_TOKEN:'')||''
     try{var u=await req.json();await pU(u);return new Response('OK',{status:200})}
     catch(e){return new Response('OK',{status:200})}
   },
