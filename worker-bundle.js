@@ -229,13 +229,25 @@ async function hM(u,b,tw){const m=u.message;if(!m)return 0;const i=m.chat.id
     if(mi){if(fu.length>4096){await tgE(i,mi,'✅ انجام شد.');await sL(i,fu)}else{if(!await tgE(i,mi,fu))await sL(i,fu)}}else await sL(i,fu)
   }catch(e){var h=await gh(i);if(h.length&&h[h.length-1].role==='user'){h.pop();await sh(i,h)}await tgS(i,'❌ خطا:\n'+e.message.substring(0,500))}}
 
+// آیا این پیام در گروه، این ربات را مخاطب قرار داده؟ (منشن یوزرنیم، ریپلای به همین ربات، کلمهٔ فراخوانی، یا دستور مربوط به این ربات)
+function addressedToBot(m,bU,tw){var t=m.text||m.caption||''
+  // منشن: فقط وقتی یوزرنیم ربات تنظیم شده باشد
+  if(bU){if(new RegExp('@'+escRx(bU)+'\\b','i').test(t))return true}
+  // ریپلای: فقط اگر روی پیام «همین» ربات باشد (نه هر باتی)
+  var rf=m.reply_to_message&&m.reply_to_message.from
+  if(rf&&rf.is_bot){if(bU&&rf.username){if(rf.username.toLowerCase()===bU.toLowerCase())return true}else return true}
+  // کلمهٔ فراخوانی: با مرز کلمه (فاصله/علامت/ابتدا و انتها) تا داخل کلمات دیگر فعال نشود
+  if(tw&&new RegExp('(^|[^A-Za-z0-9\\u0600-\\u06FF])'+escRx(tw)+'([^A-Za-z0-9\\u0600-\\u06FF]|$)').test(t))return true
+  // دستور: بدون @ برای همه؛ با @ فقط اگر مخصوص همین ربات باشد
+  if(isC(t)){var first=t.split(/\s+/)[0],parts=first.split('@');if(parts.length<2)return true;if(bU&&parts[1].toLowerCase()===bU.toLowerCase())return true}
+  return false}
 // =================== PROCESS UPDATE ===================
-async function pU(u){var c=await getCfg(),bU=c.botUsername||(typeof BOT_USERNAME!=='undefined'?BOT_USERNAME:'');var tw=(c.triggerWord||'حاجی').trim();var m=u.message;if(!m)return
-  var i=m.chat.id,uid=m.from.id,ty=m.chat.type,isMedia=hasMedia(m)
+async function pU(u){var c=await getCfg(),bU=(c.botUsername||(typeof BOT_USERNAME!=='undefined'?BOT_USERNAME:'')||'').replace(/^@/,'').trim();var tw=(c.triggerWord||'حاجی').trim();var m=u.message;if(!m)return
+  var i=m.chat.id,uid=m.from.id,ty=m.chat.type
   var aU=typeof ALLOWED_USERS!=='undefined'?ALLOWED_USERS:''
   if(aU&&!aU.split(',').map(function(x){return x.trim()}).includes(String(uid)))return tgS(i,'⛔ شما دسترسی ندارید.')
-  if(ty!=='private'){var t=m.text||m.caption||'';var mn=new RegExp('@'+bU+'\\b','i');var rp=m.reply_to_message&&m.reply_to_message.from&&m.reply_to_message.from.is_bot;var hj=tw&&t.includes(tw)
-    if(!mn.test(t)&&!rp&&!isC(t)&&!isMedia&&!hj)return}
+  // در گروه‌ها فقط وقتی ربات مخاطب قرار گرفته پاسخ بده — عکس/ویدئو/فایل هم بدون منشن پاسخ نمی‌گیرند
+  if(ty!=='private'){if(!addressedToBot(m,bU,tw))return}
   if(m.text&&isC(m.text)){try{if(await hC(i,m.text))return}catch(ce){await tgS(i,'❌ خطا:\n'+ce.message.substring(0,300));return}}
   await hM(u,bU,tw)}
 
