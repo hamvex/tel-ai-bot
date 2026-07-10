@@ -386,7 +386,7 @@ export default{
       if(url.pathname==='/sw'){
         var tok=await tgT()
         if(!tok) return new Response(JSON.stringify({ok:0,description:'TELEGRAM_BOT_TOKEN تنظیم نشده'}),{headers:{'Content-Type':'application/json'}})
-        var w2=url.origin+'/w/'+encodeURIComponent(tok)
+        var w2=url.origin+'/w/'+tok
         await fetch('https://api.telegram.org/bot'+tok+'/deleteWebhook')
         var r=await fetch('https://api.telegram.org/bot'+tok+'/setWebhook',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({url:w2,allowed_updates:['message','callback_query'],drop_pending_updates:true})})
         var jr=await r.json();jr.webhookUrl=w2
@@ -396,9 +396,9 @@ export default{
       if(url.pathname==='/whinfo'){
         var tk2=await tgT()
         if(!tk2) return new Response(JSON.stringify({ok:false,error:'توکن تلگرام تنظیم نشده'}),{headers:{'Content-Type':'application/json'}})
-        var out={expected:url.origin+'/w/'+encodeURIComponent(tk2)}
+        var exp=url.origin+'/w/'+tk2,out={expected:exp}
         try{var me=await(await fetch('https://api.telegram.org/bot'+tk2+'/getMe')).json();out.bot=me.ok?('@'+(me.result.username||'')):('توکن نامعتبر: '+(me.description||''));out.tokenValid=!!me.ok}catch(e){out.bot='خطا در اتصال';out.tokenValid=false}
-        try{var wi=await(await fetch('https://api.telegram.org/bot'+tk2+'/getWebhookInfo')).json();if(wi.ok){out.currentUrl=wi.result.url||'(ست نشده)';out.pending=wi.result.pending_update_count;out.lastError=wi.result.last_error_message||'';out.matches=wi.result.url===out.expected}}catch(e){out.currentUrl='خطا'}
+        try{var wi=await(await fetch('https://api.telegram.org/bot'+tk2+'/getWebhookInfo')).json();if(wi.ok){var cur=wi.result.url||'';out.currentUrl=cur||'(ست نشده)';out.pending=wi.result.pending_update_count;out.lastError=wi.result.last_error_message||'';out.matches=!!cur&&cur.replace(/%3A/gi,':')===exp.replace(/%3A/gi,':')}}catch(e){out.currentUrl='خطا'}
         return new Response(JSON.stringify(out),{headers:{'Content-Type':'application/json'}})
       }
       return new Response('Not Found',{status:404})
