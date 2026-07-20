@@ -158,44 +158,43 @@ function bestPhoto(p){var b=p[0];for(var i=1;i<p.length;i++)if(p[i].file_size>(b
 
 // =================== INLINE KEYBOARDS ===================
 function kbMain(){return{inline_keyboard:[
-  [{text:'⚡ حالت سریع',callback_data:'m:instant'},{text:'🧠 تفکر عمیق',callback_data:'m:think'}],
-  [{text:'🧩 مدل‌ها',callback_data:'menu:models'},{text:'📊 وضعیت',callback_data:'menu:stats'}],
-  [{text:'🔄 مکالمه جدید',callback_data:'reset:1'},{text:'📖 راهنما',callback_data:'menu:help'}]]}}
+  [{text:'⚡ پاسخ سریع',callback_data:'m:instant'},{text:'🧠 تفکر عمیق',callback_data:'m:think'}],
+  [{text:'🧩 مدل‌ها',callback_data:'menu:models'},{text:'⚙️ تنظیمات',callback_data:'menu:settings'},{text:'📊 وضعیت',callback_data:'menu:stats'}],
+  [{text:'🔄 گفتگوی جدید',callback_data:'reset:1'},{text:'📖 راهنما',callback_data:'menu:help'}]]}}
 function kbRegen(){return{inline_keyboard:[[{text:'🔄 پاسخ مجدد',callback_data:'regen:1'}]]}}
-function kbBack(){return{inline_keyboard:[[{text:'🔙 بازگشت',callback_data:'menu:main'}]]}}
+function kbBack(){return{inline_keyboard:[[{text:'🔙 بازگشت به منو',callback_data:'menu:main'}]]}}
 async function kbMode(i){var cur=await getMode(i);return{inline_keyboard:[
   [{text:(cur==='instant'?'✅ ':'')+'⚡ سریع',callback_data:'m:instant'},{text:(cur==='think'?'✅ ':'')+'🧠 تفکر عمیق',callback_data:'m:think'}]]}}
-// لیست مدل‌ها به‌صورت دکمه؛ callback_data سقف ۶۴ بایت دارد، مدل‌های خیلی بلند رد می‌شوند
-async function mdlKb(i){var m=await apim(),me=await gm(i),cr=me.model||'',rows=[]
-  for(var xi=0;xi<m.length&&rows.length<15;xi++){var id=m[xi].id,cb='mdl:'+id;if(cb.length>60)continue
-    rows.push([{text:(id===cr?'✅ ':'')+id,callback_data:cb}])}
-  rows.push([{text:'🔙 بازگشت',callback_data:'menu:main'}])
-  return{inline_keyboard:rows}}
-
-// =================== COMMANDS ===================
+function kbSettings(){return{inline_keyboard:[
+  [{text:'🎚️ حالت پاسخ',callback_data:'menu:mode'},{text:'🧩 مدل فعلی',callback_data:'menu:models'}],
+  [{text:'📝 System Prompt',callback_data:'menu:sysprompt'},{text:'ℹ️ درباره ربات',callback_data:'menu:about'}],
+  [{text:'🔙 بازگشت به منو',callback_data:'menu:main'}]]}}
+async function mdlKb(i){var m=await apim(),me=await gm(i),cr=me.mode// =================== COMMANDS ===================
 async function d(){return(await at())==='openai'?'OpenAI':'Anthropic'}
-async function stTxt(){const n=await d();return'🤖 *به ربات هوش مصنوعی خوش آمدید!*\n\n🧩 *API:* '+n+'\n📡 *سرور:* `'+(await base())+'`\n\n🚀 *قابلیت‌ها:*\n• چت با مدل‌های مختلف\n• System Prompt دلخواه\n• تاریخچه هوشمند (۱۰۰۰ پیام)\n• تحلیل عکس و فایل (PDF، متن، کد) 📸📄\n• قابل استفاده در گروه‌ها\n\n📋 *دستورات:*\n/start - شروع\n/help - راهنما\n/models - لیست مدل‌ها\n/model name - تغییر مدل\n/system text - تنظیم System Prompt\n/mode - حالت پاسخ (⚡ سریع / 🧠 عمیق)\n/reset - پاک کردن تاریخچه\n/stats - وضعیت\n\n💡 عکس یا فایل بفرستید تحلیل کنم!'}
-function hlpTxt(){return'📖 *راهنمای کامل*\n\n*دستورات:*\n/start - شروع مجدد\n/help - این راهنما\n/models - لیست مدل‌ها\n/model \\`name\\` - انتخاب مدل\n/system \\`text\\` - تنظیم System Prompt\n/mode \\`instant|think\\` - حالت پاسخ (⚡ سریع / 🧠 تفکر عمیق)\n/reset - پاک کردن تاریخچه\n/stats - آمار\n\n*تحلیل عکس:* 🖼️ عکس بفرستید\n*تحلیل فایل:* 📄 PDF، متن یا کد بفرستید (txt, md, csv, json, py, js و ...)\n*گروه:* منشن کنید یا "حاجی" بگید\n*نکته:* حداکثر ۱۰۰۰ پیام در تاریخچه'}
-async function statsTxt(i){const me=await gm(i),h=await gh(i),u=h.filter(m=>m.role==='user').length,a=h.filter(m=>m.role==='assistant').length,mode=await getMode(i)
-  return'📊 *وضعیت*\n\n🧠 مدل: `'+(me.model||'پیش‌فرض')+'`\n🎚️ حالت: '+(mode==='think'?'🧠 Deep Think':'⚡ Instant')+'\n💬 کاربر: '+u+'\n🤖 ربات: '+a+'\n📈 مجموع: '+h.length+'/'+MAX}
+async function stTxt(){const n=await d();return'▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬\n🤖 *به ربات هوش مصنوعی خوش آمدید!*\n▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬\n\n🧩 *API: '+n+'\n📡 *سرور:* \`'+(await base())+'\`\n\n🚀 *قابلیت‌ها:*\n├ 💬 چت هوشمند با مدل‌های مختلف\n├ 📸 تحلیل عکس و PDF\n├ 📄 خواندن فایل‌های متنی و کد\n├ 🧠 تفکر عمیق / پاسخ سریع\n├ 📝 System Prompt دلخواه\n├ 👥 قابل استفاده در گروه‌ها\n├ 💾 تاریخچه هوشمند (تا ۱۰۰۰ پیام)\n└ 🌐 پشتیبانی OpenAI + Anthropic\n\nاز دکمه‌های زیر استفاده کنید یا مستقیم پیام بدید! 💬'}
+function hlpTxt(){return'▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬\n📖 *راهنمای کامل ربات*\n▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬\n\n📋 *دستورات:*\n├ /start — صفحه اصلی\n├ /help — این راهنما\n├ /models — لیست مدل‌ها\n├ /model \`name\` — تغییر مدل\n├ /system \`text\` — تنظیم System Prompt\n├ /mode — تغییر حالت پاسخ\n├ /settings — تنظیمات گفتگو\n├ /reset — پاک کردن تاریخچه\n├ /stats — وضعیت و آمار\n└ /about — درباره ربات\n\n🖼️ *تحلیل عکس:*\nیک عکس بفرستید تا محتوایش را تحلیل کنم.\n\n📄 *تحلیل فایل:*\nPDF، متن یا کد بفرستید (txt, md, csv, json, py, js و ...)\n\n👥 *در گروه:*\nربات را به گروه اضافه کنید. با منشن (\`@bot\`)، کلمه فراخوانی یا ریپلای فعال می‌شود.\n\n📎 *نکته:* حداکثر ۱۰۰۰ پیام در تاریخچه ذخیره می‌شود.'}
+async function aboutTxt(){const n=await d();return'▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬\nℹ️ *درباره ربات*\n▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬\n\n🤖 *ربات هوش مصنوعی تلگرام*\n⚡ مبتنی بر Cloudflare Workers\n\n🧩 *API فعال: '+n+'\n📡 *سرور:* \`'+(await base())+'\`\n\n✨ *ویژگی‌ها:*\n• چت با مدل‌های مختلف (OpenAI، Anthropic)\n• دو حالت پاسخ: ⚡ سریع و 🧠 تفکر عمیق\n• تحلیل عکس و فایل\n• System Prompt دلخواه\n• تاریخچه هوشمند\n• پشتیبانی از گروه\n• منوی دکمه‌ای تعاملی'}
+async function setTxt(i){const me=await gm(i),h=await gh(i),u=h.filter(m=>m.role==='user').length,a=h.filter(m=>m.role==='assistant').length,mode=await getMode(i)
+  return'▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬\n⚙️ *تنظیمات*\n▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬\n\n🧠 *مدل:* \`'+(me.model||'پیش‌فرض')+'\`\n🎚️ *حالت: '+(mode==='think'?'🧠 Deep Think':'⚡ Instant')+'\n📎 *System Prompt: '+(me.systemPrompt?'✅ شخصی‌سازی شده':'پیش‌فرض')+'\n\n💬 *آمار گفتگو:*\n├ 👤 پیام‌های شما: '+u+'\n├ 🤖 پاسخ ربات: '+a+'\n└ 📊 مجموع: '+h.length+'/'+MAX+'\n\nبخش مورد نظر را انتخاب کنید:'}
 async function cSt(i){await tgS(i,await stTxt(),{reply_markup:kbMain()})}
 async function cH(i){await tgS(i,hlpTxt())}
+async function cA(i){await tgS(i,await aboutTxt())}
+async function cS(i){await tgS(i,await setTxt(i),{reply_markup:kbSettings()})}
 async function cM(i){await tgAc(i)
   try{var kb=await mdlKb(i),me=await gm(i)
-    await tgS(i,'🧩 *انتخاب مدل*\n✅ فعلی: `'+(me.model||'پیش‌فرض')+'`\n\nبرای تغییر، روی مدل بزنید:',{reply_markup:kb})}catch(e){await tgS(i,'❌ '+e.message.substring(0,300))}}
-async function cSM(i,a){if(!a||!a.trim()){const me=await gm(i);return tgS(i,'🔧 مدل فعلی: `'+(me.model||'پیش‌فرض')+'`\nبرای تغییر: /model \\`name\\`')}
-  await sm(i,{...(await gm(i)),model:a.trim()});await tgS(i,'✅ مدل به `'+a.trim()+'` تغییر یافت!')}
-async function cSy(i,a){if(!a||!a.trim()){const me=await gm(i);return tgS(i,'📝 *System Prompt:*\n```'+(me.systemPrompt||'پیش‌فرض')+'```')}
-  await sm(i,{...(await gm(i)),systemPrompt:a.trim()});await tgS(i,'✅ System Prompt تنظیم شد:\n> '+a.trim().substring(0,200))}
-async function cR(i){await ch(i);await tgS(i,'🔄 تاریخچه پاک شد! مکالمه جدید شروع می‌شود.')}
+    await tgS(i,'🧩 *انتخاب مدل*\n✅ *مدل فعلی:* \`'+(me.model||'پیش‌فرض')+'\`\n\nبرای تغییر روی مدل مورد نظر بزنید:',{reply_markup:kb})}catch(e){await tgS(i,'❌ خطا: '+e.message.substring(0,200))}}
+async function cSM(i,a){if(!a||!a.trim()){const me=await gm(i);return tgS(i,'🧩 *مدل فعلی:* \`'+(me.model||'پیش‌فرض')+'\`\nبرای تغییر: /model \`name\`')}
+  await sm(i,{...(await gm(i)),model:a.trim()});await tgS(i,'✅ مدل به \`'+a.trim()+'\` تغییر یافت!')}
+async function cSy(i,a){if(!a||!a.trim()){const me=await gm(i);return tgS(i,'📝 *System Prompt فعلی:*\n\`\`\`'+(me.systemPrompt||'پیش‌فرض (دستیار هوشمند فارسی‌زبان)')+'\`\`\`')}
+  await sm(i,{...(await gm(i)),systemPrompt:a.trim()});await tgS(i,'✅ System Prompt با موفقیت تنظیم شد:\n> '+a.trim().substring(0,200))}
+async function cR(i){await ch(i);await tgS(i,'🔄 تاریخچه گفتگو پاک شد! مکالمه جدید شروع می‌شود.')}
 async function cMode(i,a){var cur=await getMode(i);var v=(a||'').trim().toLowerCase()
-  if(v==='instant'||v==='fast'||v==='سریع'||v==='⚡'){await sm(i,{...(await gm(i)),mode:'instant'});return tgS(i,'⚡ حالت *Instant* فعال شد. پاسخ‌ها سریع و کوتاه خواهند بود.')}
-  if(v==='think'||v==='deep'||v==='deepthink'||v==='عمیق'||v==='🧠'){await sm(i,{...(await gm(i)),mode:'think'});return tgS(i,'🧠 حالت *Deep Think* فعال شد. ربات قبل از پاسخ، عمیق فکر می‌کند.')}
+  if(v==='instant'||v==='fast'||v==='سریع'||v==='⚡'){await sm(i,{...(await gm(i)),mode:'instant'});return tgS(i,'⚡ حالت *سریع (Instant)* فعال شد.\nپاسخ‌ها مستقیم، کوتاه و بدون توضیحات اضافی خواهند بود.')}
+  if(v==='think'||v==='deep'||v==='deepthink'||v==='عمیق'||v==='🧠'){await sm(i,{...(await gm(i)),mode:'think'});return tgS(i,'🧠 *تفکر عمیق (Deep Think)* فعال شد.\nربات قبل از پاسخ، مسئله را گام‌به‌گام تحلیل و عمیق بررسی می‌کند.')}
   await tgS(i,'🎚️ *حالت پاسخ‌دهی*\n\nفعلی: '+(cur==='think'?'🧠 Deep Think':'⚡ Instant')+'\n\nبرای تغییر روی دکمه بزنید:',{reply_markup:await kbMode(i)})}
-async function cSt2(i){await tgS(i,await statsTxt(i))}
+async function cSt2(i){await tgS(i,await setTxt(i),{reply_markup:kbSettings()})}
 async function hC(i,t){const p=t.split(' '),c=p[0].toLowerCase().split('@')[0],a=p.slice(1).join(' ')
-  switch(c){case'/start':case'start':await cSt(i);return 1;case'/help':await cH(i);return 1;case'/models':await cM(i);return 1;case'/model':await cSM(i,a);return 1;case'/system':await cSy(i,a);return 1;case'/mode':await cMode(i,a);return 1;case'/reset':await cR(i);return 1;case'/stats':await cSt2(i);return 1;default:return 0}}
-
+  switch(c){case'/start':case'start':await cSt(i);return 1;case'/help':await cH(i);return 1;case'/models':await cM(i);return 1;case'/model':await cSM(i,a);return 1;case'/system':await cSy(i,a);return 1;case'/mode':await cMode(i,a);return 1;case'/reset':await cR(i);return 1;case'/stats':case'/settings':case'/setting':await cSt2(i);return 1;case'/about':await cA(i);return 1;default:return 0}}
 // =================== MESSAGES (متن + عکس + فایل) ===================
 async function sL(i,t){if(t.length<=4096)return tgS(i,t);let r=t
   while(r.length>0){let p=r.lastIndexOf('\n',4096);if(p<2048)p=r.lastIndexOf(' ',4096);if(p<2048)p=4096;await tgS(i,r.substring(0,p));r=r.substring(p).trim()}}
@@ -290,10 +289,14 @@ async function hCb(q){var i=q.message&&q.message.chat?q.message.chat.id:null,mid
         if(mid)await tgE(i,mid,'🧩 *انتخاب مدل*\n✅ فعلی: `'+(me.model||'پیش‌فرض')+'`\n\nبرای تغییر، روی مدل بزنید:',{reply_markup:kb})}
       catch(e){await tgS(i,'❌ '+e.message.substring(0,200))}
       return}
-    if(dt==='menu:stats'){await tgCb(q.id);if(mid)await tgE(i,mid,await statsTxt(i),{reply_markup:kbBack()});return}
+    if(dt==='menu:settings'){await tgCb(q.id);if(mid)await tgE(i,mid,await setTxt(i),{reply_markup:kbSettings()});return}
+    if(dt==='menu:mode'){await tgCb(q.id);if(mid)await tgE(i,mid,'🎚️ *حالت پاسخ‌دهی*\n\nفعلی: '+(await getMode(i)==='think'?'🧠 Deep Think':'⚡ Instant')+'\n\nبرای تغییر روی دکمه بزنید:',{reply_markup:await kbMode(i)});return}
+    if(dt==='menu:sysprompt'){await tgCb(q.id);var sp=(await gm(i)).systemPrompt||'پیش‌فرض (دستیار هوشمند فارسی‌زبان)';if(mid)await tgE(i,mid,'📝 *System Prompt فعلی:*\n\`\`\`\n'+sp+'\n\`\`\`\n\nبرای تغییر از دستور /system استفاده کنید.',{reply_markup:kbBack()});return}
+    if(dt==='menu:about'){await tgCb(q.id);if(mid)await tgE(i,mid,await aboutTxt(),{reply_markup:kbBack()});return}
+    if(dt==='menu:stats'){await tgCb(q.id);if(mid)await tgE(i,mid,await setTxt(i),{reply_markup:kbSettings()});return}
     if(dt==='menu:help'){await tgCb(q.id);if(mid)await tgE(i,mid,hlpTxt(),{reply_markup:kbBack()});return}
     if(dt==='menu:main'){await tgCb(q.id);if(mid)await tgE(i,mid,await stTxt(),{reply_markup:kbMain()});return}
-    if(dt==='reset:1'){await ch(i);await tgCb(q.id,'🔄 تاریخچه پاک شد');await tgS(i,'🔄 تاریخچه پاک شد! مکالمه جدید شروع می‌شود.');return}
+    if(dt==='reset:1'){await ch(i);await tgCb(q.id,'🔄 تاریخچه گفتگو پاک شد');await tgS(i,'🔄 تاریخچه گفتگو پاک شد! مکالمه جدید شروع می‌شود.');return}
     if(dt==='regen:1'){await tgCb(q.id,'🔄 در حال تولید مجدد...');await regen(i);return}
     await tgCb(q.id)
   }catch(e){await tgCb(q.id,'❌ خطا')}}
