@@ -169,7 +169,11 @@ function kbSettings(){return{inline_keyboard:[
   [{text:'🎚️ حالت پاسخ',callback_data:'menu:mode'},{text:'🧩 مدل فعلی',callback_data:'menu:models'}],
   [{text:'📝 System Prompt',callback_data:'menu:sysprompt'},{text:'ℹ️ درباره ربات',callback_data:'menu:about'}],
   [{text:'🔙 بازگشت به منو',callback_data:'menu:main'}]]}}
-async function mdlKb(i){var m=await apim(),me=await gm(i),cr=me.mode// =================== COMMANDS ===================
+async function mdlKb(i){var m=await apim(),me=await gm(i),cr=me.model||'',rows=[]
+  for(var xi=0;xi<m.length&&rows.length<15;xi++){var id=m[xi].id,cb='mdl:'+id;if(cb.length>60)continue
+    rows.push([{text:(id===cr?'✅ ':'')+id,callback_data:cb}])}
+  rows.push([{text:'🔙 بازگشت',callback_data:'menu:settings'}])
+  return{inline_keyboard:rows}}// =================== COMMANDS ===================
 async function d(){return(await at())==='openai'?'OpenAI':'Anthropic'}
 async function stTxt(){const n=await d();return'▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬\n🤖 *به ربات هوش مصنوعی خوش آمدید!*\n▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬\n\n🧩 *API: '+n+'\n📡 *سرور:* \`'+(await base())+'\`\n\n🚀 *قابلیت‌ها:*\n├ 💬 چت هوشمند با مدل‌های مختلف\n├ 📸 تحلیل عکس و PDF\n├ 📄 خواندن فایل‌های متنی و کد\n├ 🧠 تفکر عمیق / پاسخ سریع\n├ 📝 System Prompt دلخواه\n├ 👥 قابل استفاده در گروه‌ها\n├ 💾 تاریخچه هوشمند (تا ۱۰۰۰ پیام)\n└ 🌐 پشتیبانی OpenAI + Anthropic\n\nاز دکمه‌های زیر استفاده کنید یا مستقیم پیام بدید! 💬'}
 function hlpTxt(){return'▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬\n📖 *راهنمای کامل ربات*\n▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬\n\n📋 *دستورات:*\n├ /start — صفحه اصلی\n├ /help — این راهنما\n├ /models — لیست مدل‌ها\n├ /model \`name\` — تغییر مدل\n├ /system \`text\` — تنظیم System Prompt\n├ /mode — تغییر حالت پاسخ\n├ /settings — تنظیمات گفتگو\n├ /reset — پاک کردن تاریخچه\n├ /stats — وضعیت و آمار\n└ /about — درباره ربات\n\n🖼️ *تحلیل عکس:*\nیک عکس بفرستید تا محتوایش را تحلیل کنم.\n\n📄 *تحلیل فایل:*\nPDF، متن یا کد بفرستید (txt, md, csv, json, py, js و ...)\n\n👥 *در گروه:*\nربات را به گروه اضافه کنید. با منشن (\`@bot\`)، کلمه فراخوانی یا ریپلای فعال می‌شود.\n\n📎 *نکته:* حداکثر ۱۰۰۰ پیام در تاریخچه ذخیره می‌شود.'}
@@ -386,7 +390,7 @@ function sH(w,s,c){if(!c)c={};return'<!DOCTYPE html>'+
 '</script></body></html>'}
 
 // =================== EXPORT DEFAULT ===================
-export default{
+export default {
   async fetch(req,env){
     globalThis.TELEGRAM_BOT_TOKEN=env.TELEGRAM_BOT_TOKEN||''
     globalThis.API_KEY=env.API_KEY||''
